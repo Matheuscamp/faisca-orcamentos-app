@@ -1,0 +1,855 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Orçamentos">
+<meta name="theme-color" content="#f4e8d0">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Orçamentos Faísca</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap">
+<style>
+/* Balcão da Faísca: catálogo à esquerda, "nota" do orçamento à direita. Visual de carimbo: traço de tinta + sombra dura. */
+:root{
+  --papel:#f4e8d0; --papel-claro:#fbf3e2; --branco:#fffdf8; --tinta:#1f1a17; --tinta-suave:#6a5b4f;
+  --vermelho:#e2472d; --brasa:#b8322a; --amarelo:#f6b93b; --amarelo-claro:#fde9bd;
+  --petroleo:#1f5c63; --petroleo-claro:#dde9e5; --linha:#e0cfae; --linha-forte:#cdb68c;
+  --display:"Lilita One","Arial Black",system-ui,sans-serif;
+  --texto:"DM Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+html{padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--papel);color:var(--tinta);font-family:var(--texto);font-size:15px;line-height:1.45;margin:0}
+button,input,select{font:inherit;color:inherit}
+.num{font-variant-numeric:tabular-nums}
+.wrap{max-width:1200px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:18px 56px}
+
+/* Cabeçalho */
+header.top{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding-bottom:16px;margin-bottom:20px;border-bottom:3px solid var(--tinta)}
+.brand{display:flex;align-items:center;gap:12px}
+.brand svg{flex-shrink:0}
+.brand h1{font-family:var(--display);font-weight:400;font-size:clamp(26px,4vw,34px);line-height:1;margin:0;text-transform:uppercase;color:var(--vermelho);text-shadow:2px 2px 0 var(--tinta);letter-spacing:.01em}
+.brand p{margin:3px 0 0;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--tinta-suave)}
+nav.tabs{display:flex;background:var(--papel-claro);border:2.5px solid var(--tinta);border-radius:999px;padding:3px;gap:2px;box-shadow:3px 3px 0 var(--tinta);max-width:100%;overflow-x:auto}
+.tab{font-family:var(--display);font-size:14px;letter-spacing:.04em;text-transform:uppercase;background:none;border:0;border-radius:999px;padding:7px 14px;cursor:pointer;min-height:38px;white-space:nowrap;display:flex;align-items:center;gap:6px}
+.tab:hover{background:var(--papel)}
+.tab[aria-selected="true"]{background:var(--tinta);color:var(--papel-claro)}
+.tab .badge{font-family:var(--texto);font-weight:700;font-size:11px;background:var(--amarelo);color:var(--tinta);border-radius:999px;padding:1px 7px;letter-spacing:0}
+:focus-visible{outline:3px solid var(--petroleo);outline-offset:2px}
+
+/* Grade principal */
+.grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(340px,1fr);gap:28px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+.sec-title{display:flex;align-items:baseline;justify-content:space-between;gap:4px 12px;flex-wrap:wrap;margin:0 0 12px}
+h2{font-family:var(--display);font-weight:400;text-transform:uppercase;font-size:22px;margin:0;letter-spacing:.01em;line-height:1.1}
+.sub-note{font-size:13px;color:var(--tinta-suave)}
+
+/* Busca + filtros */
+.searchbox{position:relative;margin-bottom:10px}
+.searchbox svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);pointer-events:none}
+.search{width:100%;padding:11px 12px 11px 38px;border:2.5px solid var(--tinta);border-radius:12px;background:var(--branco)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.chip{border:2px solid var(--tinta);background:var(--papel-claro);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:700;cursor:pointer;min-height:34px}
+.chip span{font-weight:500;color:var(--tinta-suave);margin-left:2px}
+.chip[aria-pressed="true"]{background:var(--amarelo);box-shadow:2px 2px 0 var(--tinta)}
+.chip[aria-pressed="true"] span{color:var(--tinta)}
+
+/* Catálogo */
+.cat{display:flex;align-items:center;gap:10px;font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--brasa);margin:18px 0 8px}
+.cat::after{content:"";flex:1;border-top:2px dashed var(--linha-forte)}
+.cat:first-child{margin-top:0}
+.plist{display:grid;gap:10px}
+.prod{background:var(--papel-claro);border:2px solid var(--tinta);border-radius:14px;padding:12px 14px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 12px;align-items:center;transition:box-shadow .15s,transform .15s}
+.prod.on{background:var(--branco);box-shadow:4px 4px 0 var(--vermelho);border-color:var(--tinta)}
+.prod .nm{font-weight:700;font-size:15.5px;line-height:1.25;min-width:0}
+.prod .tec{display:inline-block;margin-top:3px;font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--petroleo)}
+.ladder{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1.5px solid var(--linha-forte);border-radius:10px;overflow:hidden;background:var(--papel)}
+.rung{padding:5px 8px;border-left:1.5px solid var(--linha-forte);min-width:0}
+.rung:first-child{border-left:0}
+.rung small{display:block;font-size:11px;color:var(--tinta-suave);line-height:1.2}
+.rung b{display:block;font-size:13.5px;line-height:1.3;white-space:nowrap;font-variant-numeric:tabular-nums}
+.rung.cur{background:var(--amarelo)}
+.rung.cur small{color:var(--tinta)}
+.rung.off b{color:var(--linha-forte)}
+.addbtn{font-family:var(--display);font-size:14px;letter-spacing:.03em;text-transform:uppercase;border:2.5px solid var(--tinta);border-radius:10px;padding:6px 12px;min-height:38px;background:var(--papel-claro);cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.addbtn:hover{background:var(--amarelo)}
+.addbtn .plus{font-size:18px;line-height:1}
+.inq{display:flex;align-items:center;border:2.5px solid var(--tinta);border-radius:10px;overflow:hidden;background:var(--vermelho);color:var(--papel-claro);min-height:38px}
+.inq button{background:none;border:0;color:inherit;width:34px;height:34px;font-size:18px;font-weight:700;cursor:pointer}
+.inq button:hover{background:var(--brasa)}
+.inq span{min-width:34px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+
+/* Botões */
+.btn{font-family:var(--display);font-size:15px;letter-spacing:.03em;text-transform:uppercase;border:2.5px solid var(--tinta);border-radius:12px;padding:9px 16px;cursor:pointer;background:var(--amarelo);color:var(--tinta);box-shadow:3px 3px 0 var(--tinta);min-height:44px;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--tinta)}
+.btn.red{background:var(--vermelho);color:var(--papel-claro)}
+.btn.teal{background:var(--petroleo);color:var(--papel-claro)}
+.btn.ghost{background:var(--papel-claro);box-shadow:none}
+.btn.danger{background:var(--brasa);color:var(--papel-claro);box-shadow:none}
+.btn.big{font-size:17px;min-height:50px;width:100%}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+.link{background:none;border:0;padding:4px 2px;cursor:pointer;color:var(--tinta-suave);font-size:13px;font-weight:500;text-decoration:underline;text-underline-offset:2px;min-height:32px}
+.link:hover{color:var(--tinta)}
+.link.warn{color:var(--brasa);font-weight:700}
+
+/* Nota do orçamento */
+.ticket{position:sticky;top:calc(env(safe-area-inset-top,0px) + 14px);background:var(--branco);border:3px solid var(--tinta);border-radius:18px;box-shadow:6px 6px 0 var(--tinta);overflow:hidden;scroll-margin-top:14px}
+@media (max-width:900px){.ticket{position:static}}
+.ticket-head{background:var(--vermelho);color:var(--papel-claro);border-bottom:3px solid var(--tinta);padding:12px 18px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.ticket-head h2{color:var(--papel-claro);text-shadow:2px 2px 0 var(--tinta);font-size:24px}
+.ticket-head .meta{font-size:12.5px;font-weight:700;text-align:right;line-height:1.3}
+.ticket-body{padding:16px 18px 18px;display:flex;flex-direction:column;gap:14px}
+.field{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--tinta-suave)}
+.field input,.field select{font-size:15px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--tinta);padding:10px 12px;border:2px solid var(--tinta);border-radius:10px;background:var(--branco);min-width:0;width:100%}
+.prefix{position:relative}
+.prefix::before{content:"R$";position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:13px;font-weight:700;color:var(--tinta-suave);letter-spacing:0;pointer-events:none}
+.prefix input{padding-left:36px}
+
+.items{display:flex;flex-direction:column}
+.item{padding:12px 0;border-bottom:2px dashed var(--linha);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 12px}
+.item:first-child{border-top:2px dashed var(--linha)}
+.item .nm{font-weight:700;line-height:1.25;min-width:0}
+.item .meta{font-size:12.5px;color:var(--tinta-suave);margin-top:2px}
+.item .sub{font-weight:700;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.item .row2{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.stepper{display:flex;align-items:center;border:2px solid var(--tinta);border-radius:10px;overflow:hidden;background:var(--papel-claro)}
+.stepper button{width:36px;height:36px;border:0;background:none;font-size:18px;font-weight:700;cursor:pointer}
+.stepper button:hover{background:var(--amarelo-claro)}
+.stepper input{width:58px;height:36px;text-align:center;border:0;border-left:2px solid var(--tinta);border-right:2px solid var(--tinta);background:var(--branco);font-weight:700;font-variant-numeric:tabular-nums;-moz-appearance:textfield}
+.stepper input::-webkit-inner-spin-button,.stepper input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.upsell{grid-column:1/-1;display:block;width:100%;text-align:left;font-size:12.5px;background:var(--amarelo-claro);border:1.5px dashed var(--amarelo);border-radius:8px;padding:6px 10px;cursor:pointer;color:var(--tinta)}
+.upsell:hover{border-style:solid}
+.upsell b{white-space:nowrap}
+.empty{padding:22px 16px;text-align:center;color:var(--tinta-suave);font-size:14px;border:2px dashed var(--linha-forte);border-radius:12px;background:var(--papel-claro)}
+.empty strong{display:block;font-family:var(--display);font-weight:400;font-size:17px;text-transform:uppercase;color:var(--tinta);margin-bottom:2px}
+
+.adjust{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:end}
+@media (max-width:420px){.adjust{grid-template-columns:minmax(0,1fr)}}
+.toggle{display:flex;align-items:center;gap:10px;border:2px solid var(--tinta);border-radius:10px;padding:0 12px;min-height:44px;cursor:pointer;background:var(--papel-claro);font-size:14px;font-weight:700}
+.toggle input{width:20px;height:20px;accent-color:var(--vermelho);margin:0}
+.toggle small{display:block;font-size:11.5px;font-weight:500;color:var(--tinta-suave)}
+
+.sums{display:flex;flex-direction:column;gap:5px;font-variant-numeric:tabular-nums;background:var(--papel-claro);border:2px solid var(--linha);border-radius:12px;padding:12px 14px}
+.sums .row{display:flex;justify-content:space-between;gap:10px;font-size:14px}
+.sums .row.neg span:last-child{color:var(--brasa);font-weight:700}
+.sums .total{display:flex;justify-content:space-between;align-items:baseline;gap:10px;border-top:3px solid var(--tinta);padding-top:10px;margin-top:6px}
+.sums .total span:first-child{font-family:var(--display);font-size:20px;text-transform:uppercase}
+.sums .total span:last-child{font-family:var(--display);font-size:34px;line-height:1;color:var(--vermelho);text-shadow:2px 2px 0 var(--tinta)}
+.lucro{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:4px 10px;font-size:12.5px;color:var(--petroleo);border-top:1.5px dashed var(--linha-forte);padding-top:8px;margin-top:4px}
+.lucro b{font-size:13.5px}
+.lucro .lock{display:flex;align-items:center;gap:5px}
+
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.actions .wide{grid-column:1/-1}
+details.prev summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--tinta-suave);list-style:none;display:flex;align-items:center;gap:6px}
+details.prev summary::-webkit-details-marker{display:none}
+details.prev summary::before{content:"▸";transition:transform .15s}
+details.prev[open] summary::before{transform:rotate(90deg)}
+.preview{white-space:pre-wrap;font-size:13px;background:#e7f3df;border:2px solid #b9d6a8;border-radius:12px 12px 12px 2px;padding:10px 12px;margin-top:8px;max-height:260px;overflow:auto;user-select:all}
+
+/* Barra fixa no celular */
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:15;background:var(--tinta);color:var(--papel-claro);padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:none;align-items:center;justify-content:space-between;gap:12px;border-top:3px solid var(--vermelho)}
+.dock .t{font-family:var(--display);font-size:24px;line-height:1;color:var(--amarelo)}
+.dock small{display:block;font-size:12px;opacity:.85}
+.dock .btn{min-height:42px;box-shadow:none;border-color:var(--papel-claro)}
+@media (max-width:900px){.dock.show{display:flex} body.has-dock .wrap{padding-bottom:110px}}
+
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--tinta);color:var(--papel-claro);padding:10px 18px;border-radius:999px;font-weight:700;font-size:14px;z-index:30;border:2px solid var(--amarelo);max-width:calc(100% - 32px);text-align:center}
+@media (max-width:900px){body.has-dock .toast{bottom:calc(88px + env(safe-area-inset-bottom,0px))}}
+
+/* Produtos */
+.pgrid{display:grid;grid-template-columns:minmax(290px,330px) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:900px){.pgrid{grid-template-columns:minmax(0,1fr)}}
+.form{background:var(--branco);border:3px solid var(--tinta);border-radius:18px;box-shadow:6px 6px 0 var(--tinta);overflow:hidden;position:sticky;top:14px}
+@media (max-width:900px){.form{position:static}}
+.form-head{background:var(--petroleo);color:var(--papel-claro);border-bottom:3px solid var(--tinta);padding:12px 18px}
+.form-head h2{font-size:20px}
+.form-head p{margin:2px 0 0;font-size:12.5px;opacity:.85}
+.form-body{padding:16px 18px 18px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.form-body .full{grid-column:1/-1}
+fieldset{border:2px dashed var(--linha-forte);border-radius:12px;padding:10px 12px 12px;margin:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+legend{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--tinta-suave);padding:0 4px}
+.hint{font-size:12px;color:var(--tinta-suave);font-weight:500;letter-spacing:0;text-transform:none}
+.form-actions{grid-column:1/-1;display:flex;gap:10px;flex-wrap:wrap}
+.form-actions .btn{flex:1 1 auto}
+
+.tablebox{overflow-x:auto;border:2.5px solid var(--tinta);border-radius:16px;background:var(--branco)}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:14px}
+th,td{padding:10px 12px;text-align:left;border-bottom:1.5px solid var(--linha);vertical-align:middle}
+thead th{background:var(--papel-claro);font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tinta-suave);border-bottom:2.5px solid var(--tinta);position:sticky;top:0}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tbody tr:hover{background:var(--papel-claro)}
+tbody tr.editing{background:var(--amarelo-claro)}
+tr.grp td{background:var(--papel);font-family:var(--display);font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--brasa);padding:6px 12px}
+td .pn{font-weight:700;min-width:170px}
+tbody td,thead th{padding-left:10px;padding-right:10px}
+td .pt{font-size:12px;color:var(--tinta-suave)}
+.mg{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:1px 8px;background:var(--petroleo-claro);color:var(--petroleo)}
+.mg.low{background:#f8d9d2;color:var(--brasa)}
+td.acts{white-space:nowrap;text-align:right}
+
+/* Salvos */
+.saved{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:14px}
+.scard{background:var(--branco);border:2.5px solid var(--tinta);border-radius:16px;box-shadow:4px 4px 0 var(--tinta);padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.scard .top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.scard .cli{font-weight:700;font-size:16px;min-width:0;overflow-wrap:anywhere}
+.scard .dt{font-size:12px;color:var(--tinta-suave);white-space:nowrap}
+.scard .its{font-size:13px;color:var(--tinta-suave);line-height:1.4}
+.scard .bot{display:flex;justify-content:space-between;align-items:center;gap:10px;border-top:2px dashed var(--linha);padding-top:10px;margin-top:auto}
+.scard .t{font-family:var(--display);font-size:24px;color:var(--vermelho);font-variant-numeric:tabular-nums;line-height:1}
+.scard .bot div{display:flex;align-items:center;gap:6px}
+.scard .btn{min-height:38px;font-size:14px;padding:6px 14px;box-shadow:2px 2px 0 var(--tinta)}
+
+.status{font-size:13px;color:var(--tinta-suave)}
+@media (max-width:520px){
+  header.top{gap:12px}
+  nav.tabs{width:100%}
+  .tab{flex:1 1 auto;justify-content:center;padding:7px 8px;font-size:13px}
+  .ticket-body,.form-body{padding-left:14px;padding-right:14px}
+  .rung{padding:5px 6px}
+  .rung b{font-size:12.5px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.backup{margin-top:16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border:2px dashed var(--linha-forte);border-radius:14px;padding:12px 14px;background:var(--papel-claro)}
+.backup b{display:block}
+.backup-btns{display:flex;gap:8px;flex-wrap:wrap}
+.backup .btn{min-height:40px;font-size:14px}
+.gate{position:fixed;inset:0;z-index:50;background:var(--papel);display:flex;align-items:center;justify-content:center;padding:calc(20px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));overflow-y:auto}
+.gate-card{width:100%;max-width:400px;background:var(--branco);border:3px solid var(--tinta);border-radius:18px;box-shadow:6px 6px 0 var(--tinta);overflow:hidden}
+.gate-head{background:var(--vermelho);border-bottom:3px solid var(--tinta);padding:16px 18px;display:flex;align-items:center;gap:12px}
+.gate-head h2{color:var(--papel-claro);text-shadow:2px 2px 0 var(--tinta);font-size:26px}
+.gate-head p{margin:2px 0 0;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--papel-claro)}
+.gate-body{padding:18px;display:flex;flex-direction:column;gap:12px}
+.gate-body #gate-setup{display:flex;flex-direction:column;gap:12px;border:2px dashed var(--linha-forte);border-radius:12px;padding:12px}
+.gate-body #gate-setup[hidden]{display:none}
+.gate-err{margin:0;background:#f8d9d2;color:var(--brasa);border-radius:10px;padding:8px 12px;font-size:13.5px;font-weight:700}
+.conta{margin-top:16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border:2px dashed var(--linha-forte);border-radius:14px;padding:12px 14px;background:var(--papel-claro)}
+.conta b{display:block}
+.conta-btns{display:flex;gap:8px;flex-wrap:wrap}
+.conta .btn{min-height:40px;font-size:14px}
+.sync{display:inline-flex;align-items:center;gap:6px}
+.sync::before{content:"";width:8px;height:8px;border-radius:50%;background:#3a9a5b}
+.sync.off::before{background:var(--brasa)}
+</style>
+</head>
+<body>
+<script>
+/* ===== CONFIGURAÇÃO DO BANCO (Supabase) ===== */
+const FAISCA_CONFIG = { url: "https://dzvxpmxrubgxgyxxtwxz.supabase.co", key: "sb_publishable_ZeTDaEhvbJ-DiT-i2O5cYg_ntWrg5cq" };   // preenchido com os dados do seu projeto
+
+/* Banco na nuvem: Supabase via REST, com login por e-mail e senha.
+   Imita a mesma interface que o app já usa (collection/doc/onSnapshot). */
+(function(){
+  const LS = { get(k){ try { return JSON.parse(localStorage.getItem(k)||"null"); } catch(e){ return null; } },
+               set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} },
+               del(k){ try { localStorage.removeItem(k); } catch(e){} } };
+  let cfg = (FAISCA_CONFIG.url && FAISCA_CONFIG.key) ? FAISCA_CONFIG : (LS.get("faisca-cfg") || {url:"",key:""});
+  const base = () => cfg.url.replace(/\/+$/,"");
+  let sess = LS.get("faisca-sess");
+
+  async function auth(path, body){
+    const r = await fetch(base()+"/auth/v1/"+path, {method:"POST", headers:{"apikey":cfg.key,"Content-Type":"application/json"}, body:JSON.stringify(body)});
+    const j = await r.json().catch(()=>({}));
+    if (!r.ok) throw Object.assign(new Error(j.error_description||j.msg||j.message||"erro"), {status:r.status});
+    sess = {at:j.access_token, rt:j.refresh_token, exp:Date.now()+ (j.expires_in||3600)*1000, email:(j.user&&j.user.email)||(sess&&sess.email)||""};
+    LS.set("faisca-sess", sess); return sess;
+  }
+  let refreshing = null;
+  async function token(){
+    if (!sess) throw Object.assign(new Error("sem login"), {status:401});
+    if (Date.now() > sess.exp - 60000){
+      refreshing = refreshing || auth("token?grant_type=refresh_token", {refresh_token:sess.rt}).finally(()=>refreshing=null);
+      try { await refreshing; } catch(e){ if (e.status===400||e.status===401){ sess=null; LS.del("faisca-sess"); FaiscaAuth.onLogout(); } throw e; }
+    }
+    return sess.at;
+  }
+  async function rest(method, path, body, prefer){
+    const h = {"apikey":cfg.key, "Authorization":"Bearer "+await token(), "Content-Type":"application/json"};
+    if (prefer) h.Prefer = prefer;
+    const r = await fetch(base()+"/rest/v1/"+path, {method, headers:h, body: body?JSON.stringify(body):undefined});
+    if (r.status===401){ sess=null; LS.del("faisca-sess"); FaiscaAuth.onLogout(); }
+    if (!r.ok){ const j = await r.json().catch(()=>({})); throw Object.assign(new Error(j.message||"erro"), {status:r.status, code:j.code}); }
+    return r.status===204 ? null : r.json().catch(()=>null);
+  }
+
+  // Nomes de campo: o app usa criadoEm, a tabela usa criado_em
+  const fromRow = (col, r) => { const d = Object.assign({}, r); delete d.id; if (col==="orcamentos"){ d.criadoEm = d.criado_em; delete d.criado_em; } delete d.atualizado_em; return d; };
+  const toRow = (col, d) => { const r = Object.assign({}, d); if ("criadoEm" in r){ r.criado_em = r.criadoEm; delete r.criadoEm; } return r; };
+  const colName = f => f==="criadoEm" ? "criado_em" : f;
+
+  const subs = [];
+  async function load(s){
+    const q = s.q; let path = q.col+"?select=*";
+    if (q.ord) path += "&order="+colName(q.ord[0])+"."+q.ord[1];
+    if (q.lim) path += "&limit="+q.lim;
+    try {
+      const rows = await rest("GET", path);
+      LS.set("faisca-cache-"+q.col, rows);
+      s.cb(snap(q.col, rows)); FaiscaAuth.online(true);
+    } catch(e){ FaiscaAuth.online(false); if (s.err) s.err(e); }
+  }
+  const snap = (col, rows) => ({docs: (rows||[]).map(r => ({id:String(r.id), data:() => fromRow(col, r)}))});
+  const refresh = col => subs.filter(s => !col || s.q.col===col).forEach(load);
+  function coll(col, q){
+    q = q || {col};
+    return {
+      orderBy:(f,dir) => coll(col, Object.assign({}, q, {ord:[f,dir||"asc"]})),
+      limit:n => coll(col, Object.assign({}, q, {lim:n})),
+      onSnapshot:(cb, err) => { const s={q,cb,err}; subs.push(s); const c = LS.get("faisca-cache-"+col); if (c) setTimeout(()=>cb(snap(col,c)),0); load(s); return () => subs.splice(subs.indexOf(s),1); },
+      add: async d => { const r = await rest("POST", col, toRow(col,d), "return=representation"); refresh(col); return {id: r && r[0] && r[0].id}; }
+    };
+  }
+  const db = {
+    collection: c => coll(c),
+    doc: path => { const [col,id] = path.split("/"); const f = col+"?id=eq."+encodeURIComponent(id); return {
+      update: async d => { await rest("PATCH", f, toRow(col,d)); refresh(col); },
+      delete: async () => { await rest("DELETE", f); refresh(col); }
+    }; }
+  };
+  // Atualiza ao voltar para o app, ao reconectar e a cada 5 s com o app aberto
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && sess) refresh(); });
+  addEventListener("focus", () => { if (sess) refresh(); });
+  setInterval(() => { if (!document.hidden && sess && navigator.onLine !== false) refresh(); }, 5000);
+  addEventListener("online", () => { if (sess) refresh(); });
+
+  let resolveDb; const dbReady = new Promise(r => resolveDb = r);
+  window.FaiscaAuth = {
+    configured: () => !!(cfg.url && cfg.key),
+    needsSetup: !(FAISCA_CONFIG.url && FAISCA_CONFIG.key),
+    email: () => sess && sess.email,
+    async login(email, senha, url, key){
+      if (url && key){ cfg = {url:url.trim(), key:key.trim()}; LS.set("faisca-cfg", cfg); }
+      await auth("token?grant_type=password", {email, password:senha});
+      resolveDb(db); refresh();
+    },
+    logout(){ const at = sess && sess.at; sess=null; LS.del("faisca-sess"); ["produtos","orcamentos"].forEach(c=>LS.del("faisca-cache-"+c));
+      if (at) fetch(base()+"/auth/v1/logout", {method:"POST", headers:{"apikey":cfg.key,"Authorization":"Bearer "+at}}).catch(()=>{});
+      location.reload(); },
+    exportar: async () => JSON.stringify({app:"faisca-orcamentos", exportadoEm:new Date().toISOString(), produtos: await rest("GET","produtos?select=*&order=ordem.asc"), orcamentos: await rest("GET","orcamentos?select=*&order=criado_em.desc")}, null, 1),
+    onLogout(){}, online(){}
+  };
+  if (sess && cfg.url) resolveDb(db);
+  window.claude = { use: async name => name==="db" ? dbReady : null };
+})();
+</script>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <svg width="44" height="50" viewBox="60 10 290 400" aria-hidden="true"><path d="M200,400 C118,400 66,346 66,272 C66,214 92,176 112,146 C118,170 128,184 142,190 C134,150 146,104 176,72 C176,96 184,112 198,120 C200,82 222,42 262,18 C254,52 262,80 278,104 C290,122 300,134 304,150 C316,134 320,116 316,96 C346,128 334,176 334,214 C334,214 336,240 336,272 C336,346 282,400 200,400 Z" fill="#e2472d" stroke="#1f1a17" stroke-width="12" stroke-linejoin="round"/><path d="M200,382 C140,382 104,342 104,288 C104,240 128,208 150,198 C168,214 186,212 198,196 C210,214 236,218 256,204 C282,218 298,250 298,290 C298,342 262,382 200,382 Z" fill="#fbf3e2" stroke="#1f1a17" stroke-width="12" stroke-linejoin="round"/><path d="M148,262 Q166,240 186,258" fill="none" stroke="#1f1a17" stroke-width="12" stroke-linecap="round"/><ellipse cx="240" cy="252" rx="13" ry="19" fill="#1f1a17"/><path d="M168,296 C176,334 236,336 248,292 C224,304 192,306 168,296 Z" fill="#1f1a17"/></svg>
+      <div><h1>Orçamentos</h1><p>Faísca Personalizados</p></div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Seções">
+      <button class="tab" role="tab" id="tab-novo" aria-selected="true" data-view="novo">Orçamento <span class="badge" id="b-novo" hidden></span></button>
+      <button class="tab" role="tab" id="tab-produtos" aria-selected="false" data-view="produtos">Produtos <span class="badge" id="b-prod" hidden></span></button>
+      <button class="tab" role="tab" id="tab-salvos" aria-selected="false" data-view="salvos">Salvos <span class="badge" id="b-salvos" hidden></span></button>
+    </nav>
+  </header>
+
+  <!-- NOVO ORÇAMENTO -->
+  <section id="view-novo" class="grid">
+    <div>
+      <div class="sec-title"><h2>Escolha os produtos</h2><span class="sub-note" id="status">Carregando…</span></div>
+      <div class="searchbox">
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="#1f1a17" stroke-width="2.5"/><path d="M15.5 15.5L21 21" stroke="#1f1a17" stroke-width="2.5" stroke-linecap="round"/></svg>
+        <input class="search" id="busca" type="search" placeholder="Buscar produto (ex.: caneca, dry-fit)" aria-label="Buscar produto">
+      </div>
+      <div class="chips" id="chips" role="group" aria-label="Filtrar por categoria"></div>
+      <div id="catalogo"></div>
+    </div>
+
+    <aside class="ticket" id="ticket" aria-label="Orçamento">
+      <div class="ticket-head"><h2>Orçamento</h2><div class="meta"><span id="data-hoje"></span><br><span id="pecas">0 peças</span></div></div>
+      <div class="ticket-body">
+        <label class="field">Cliente<input id="cliente" type="text" placeholder="Nome do cliente ou empresa" autocomplete="off"></label>
+        <div class="items" id="itens"></div>
+        <div class="adjust">
+          <label class="toggle"><input type="checkbox" id="desconto"><span>10% off<small>1º pedido</small></span></label>
+          <label class="field">Frete / taxa<span class="prefix"><input id="extra" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0,00"></span></label>
+        </div>
+        <div class="sums" id="somas"></div>
+        <div class="actions">
+          <button class="btn red big wide" id="copiar"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5a9.5 9.5 0 0 0-8.2 14.3L2.5 21.5l4.8-1.3A9.5 9.5 0 1 0 12 2.5z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M8.6 7.8c.3-.6.6-.6.9-.6h.6c.2 0 .5.1.6.5l.8 1.9c.1.3 0 .5-.1.7l-.5.6c-.2.2-.2.4 0 .6.7 1.2 1.6 2 2.8 2.6.2.1.5.1.6-.1l.7-.8c.2-.2.4-.3.7-.2l1.8.9c.3.1.4.3.4.5 0 .9-.6 1.8-1.5 2-.8.2-1.9.2-3.8-.8-2.3-1.2-3.8-3.4-4.2-4.2-.5-.9-.6-2.4.2-3.4z" fill="currentColor"/></svg>Copiar p/ WhatsApp</button>
+          <button class="btn teal" id="salvar">Salvar</button>
+          <button class="btn ghost" id="limpar">Limpar</button>
+        </div>
+        <details class="prev"><summary>Ver mensagem que vai ser copiada</summary><div class="preview" id="preview"></div></details>
+      </div>
+    </aside>
+  </section>
+
+  <!-- PRODUTOS -->
+  <section id="view-produtos" hidden>
+    <div class="pgrid">
+      <form class="form" id="pform" autocomplete="off">
+        <div class="form-head"><h2 id="pform-titulo">Novo produto</h2><p id="pform-sub">Cadastre uma vez e ele aparece no orçamento.</p></div>
+        <div class="form-body">
+          <label class="field full">Nome<input id="p-nome" required placeholder="Ex.: Caneca 325 ml"></label>
+          <label class="field">Categoria<select id="p-cat"><option>Brindes</option><option>Camisetas · sublimação</option><option>Camisetas · DTF</option><option>Outros</option></select></label>
+          <label class="field">Técnica<input id="p-tec" placeholder="Sublimação, DTF…"></label>
+          <fieldset class="full"><legend>Preço por peça, conforme a quantidade</legend>
+            <label class="field">1–9 un.<span class="prefix"><input id="p-p1" type="number" step="0.01" min="0" required inputmode="decimal"></span></label>
+            <label class="field">10–29 un.<span class="prefix"><input id="p-p10" type="number" step="0.01" min="0" inputmode="decimal"></span></label>
+            <label class="field">30–49 un.<span class="prefix"><input id="p-p30" type="number" step="0.01" min="0" inputmode="decimal"></span></label>
+            <label class="field">50+ un.<span class="prefix"><input id="p-p50" type="number" step="0.01" min="0" inputmode="decimal"></span></label>
+          </fieldset>
+          <label class="field full">Custo por peça <span class="hint">só você vê; serve para calcular o lucro</span><span class="prefix"><input id="p-custo" type="number" step="0.01" min="0" inputmode="decimal"></span></label>
+          <div class="form-actions">
+            <button class="btn red" type="submit" id="p-salvar">Adicionar produto</button>
+            <button class="btn ghost" type="button" id="p-cancelar" hidden>Cancelar</button>
+          </div>
+        </div>
+      </form>
+      <div>
+        <div class="sec-title"><h2>Tabela de preços</h2><span class="sub-note">Margem = lucro sobre o custo na faixa 1–9</span></div>
+        <div class="tablebox"><table>
+          <thead><tr><th>Produto</th><th class="n">1–9</th><th class="n">10–29</th><th class="n">30–49</th><th class="n">50+</th><th class="n">Custo</th><th class="n">Margem</th><th class="n"><span class="hint" style="font-size:inherit;text-transform:uppercase;letter-spacing:inherit;font-weight:700">Ações</span></th></tr></thead>
+          <tbody id="ptable"></tbody>
+        </table></div>
+        <div class="conta">
+          <div><b>Conta</b><span class="hint"><span id="conta-email"></span> · <span class="sync" id="conta-sync">sincronizado</span> · versão 1.1</span></div>
+          <div class="conta-btns">
+            <button class="btn ghost" type="button" id="bk-exp">Baixar backup</button>
+            <button class="btn ghost" type="button" id="sair">Sair</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SALVOS -->
+  <section id="view-salvos" hidden>
+    <div class="sec-title"><h2>Orçamentos salvos</h2><span class="sub-note">Abra um para editar ou reenviar</span></div>
+    <div class="saved" id="salvos"></div>
+  </section>
+</div>
+
+<div class="dock" id="dock" aria-hidden="true">
+  <div><small id="dock-n">0 itens</small><div class="t num" id="dock-t">R$ 0,00</div></div>
+  <button class="btn" id="dock-ver" type="button" tabindex="-1">Ver orçamento ↓</button>
+</div>
+
+<div class="gate" id="gate" hidden>
+  <form class="gate-card" id="gate-form" autocomplete="on">
+    <div class="gate-head">
+      <svg width="54" height="62" viewBox="60 10 290 400" aria-hidden="true"><path d="M200,400 C118,400 66,346 66,272 C66,214 92,176 112,146 C118,170 128,184 142,190 C134,150 146,104 176,72 C176,96 184,112 198,120 C200,82 222,42 262,18 C254,52 262,80 278,104 C290,122 300,134 304,150 C316,134 320,116 316,96 C346,128 334,176 334,214 C334,214 336,240 336,272 C336,346 282,400 200,400 Z" fill="#e2472d" stroke="#1f1a17" stroke-width="12" stroke-linejoin="round"/><path d="M200,382 C140,382 104,342 104,288 C104,240 128,208 150,198 C168,214 186,212 198,196 C210,214 236,218 256,204 C282,218 298,250 298,290 C298,342 262,382 200,382 Z" fill="#fbf3e2" stroke="#1f1a17" stroke-width="12" stroke-linejoin="round"/><path d="M148,262 Q166,240 186,258" fill="none" stroke="#1f1a17" stroke-width="12" stroke-linecap="round"/><ellipse cx="240" cy="252" rx="13" ry="19" fill="#1f1a17"/><path d="M168,296 C176,334 236,336 248,292 C224,304 192,306 168,296 Z" fill="#1f1a17"/></svg>
+      <div><h2>Orçamentos</h2><p>Faísca Personalizados</p></div>
+    </div>
+    <div class="gate-body">
+      <div id="gate-setup" hidden>
+        <label class="field">Project URL<input id="g-url" type="url" placeholder="https://xxxx.supabase.co" autocapitalize="off" spellcheck="false"></label>
+        <label class="field">Chave publishable / anon<input id="g-key" type="text" placeholder="sb_publishable_… ou eyJ…" autocapitalize="off" spellcheck="false"></label>
+      </div>
+      <label class="field">E-mail<input id="g-email" type="email" autocomplete="username" required autocapitalize="off"></label>
+      <label class="field">Senha<input id="g-senha" type="password" autocomplete="current-password" required></label>
+      <p class="gate-err" id="gate-err" hidden></p>
+      <button class="btn red big" type="submit" id="g-entrar">Entrar</button>
+      <p class="hint" style="text-align:center;margin:0">Seus produtos e orçamentos ficam salvos na nuvem e aparecem em todos os aparelhos.</p>
+    </div>
+  </form>
+</div>
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script>
+(function(){
+  const $ = s => document.querySelector(s);
+  const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
+  const BRL = v => "R$ " + (Number(v)||0).toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  const CATS = ["Brindes","Camisetas · sublimação","Camisetas · DTF","Outros"];
+  const TIERS = [{k:"p1",min:1,lab:"1–9"},{k:"p10",min:10,lab:"10–29"},{k:"p30",min:30,lab:"30–49"},{k:"p50",min:50,lab:"50+"}];
+  let db = null, produtos = [], salvos = [], editId = null, filtro = "Todos";
+  let cart = { cliente:"", itens:[], desconto:false, extra:0 };
+  try { const d = JSON.parse(localStorage.getItem("faisca-orc-draft")||"null"); if (d && Array.isArray(d.itens)) cart = d; } catch(e){}
+  const persist = () => { try { localStorage.setItem("faisca-orc-draft", JSON.stringify(cart)); } catch(e){} };
+
+  const hoje = new Date();
+  $("#data-hoje").textContent = hoje.toLocaleDateString("pt-BR");
+
+  function toast(msg){ const t=$("#toast"); t.textContent=msg; t.hidden=false; clearTimeout(toast.h); toast.h=setTimeout(()=>t.hidden=true,2200); }
+  const plural = (n, s, p) => n + " " + (n===1 ? s : p);
+
+  // Faixa de preço pela quantidade (cai para a faixa anterior quando a faixa não tem preço)
+  function unitPrice(p, q){
+    let price = Number(p.p1)||0, lab = "1–9", k = "p1";
+    for (const t of TIERS){ if (q >= t.min && Number(p[t.k]) > 0){ price = Number(p[t.k]); lab = t.lab; k = t.k; } }
+    return {price, lab, k};
+  }
+  function nextTier(p, q){
+    const cur = unitPrice(p, q).price;
+    for (const t of TIERS){ if (t.min > q && Number(p[t.k]) > 0 && Number(p[t.k]) < cur) return {falta: t.min - q, min: t.min, price: Number(p[t.k]), lab: t.lab}; }
+    return null;
+  }
+
+  // ---------- Abas ----------
+  document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => show(b.dataset.view)));
+  let view = "novo";
+  function show(v){
+    view = v;
+    document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", String(b.dataset.view===v)));
+    ["novo","produtos","salvos"].forEach(n => $("#view-"+n).hidden = n!==v);
+    updateDock();
+  }
+
+  // ---------- Catálogo ----------
+  $("#busca").addEventListener("input", renderCatalogo);
+  function renderChips(){
+    const box = $("#chips"); box.textContent = "";
+    const cats = ["Todos", ...CATS.filter(c => produtos.some(p => (p.cat||"Outros")===c))];
+    if (cats.length < 3){ box.hidden = true; return; } box.hidden = false;
+    cats.forEach(c => {
+      const n = c==="Todos" ? produtos.length : produtos.filter(p => (p.cat||"Outros")===c).length;
+      const b = el("button","chip", c); b.type="button"; b.setAttribute("aria-pressed", String(filtro===c));
+      b.append(el("span", null, " "+n));
+      b.onclick = () => { filtro = c; renderChips(); renderCatalogo(); };
+      box.append(b);
+    });
+  }
+  function renderCatalogo(){
+    const q = $("#busca").value.trim().toLowerCase();
+    const box = $("#catalogo"); box.textContent = "";
+    if (!produtos.length){
+      const e = el("div","empty");
+      if (db){ e.append(el("strong",null,"Nenhum produto ainda")); e.append("Cadastre seus produtos na aba Produtos."); }
+      else e.textContent = "Carregando produtos…";
+      box.append(e); return;
+    }
+    const noCart = new Map(cart.itens.map(i => [i.id, i]));
+    CATS.forEach(cat => {
+      if (filtro !== "Todos" && filtro !== cat) return;
+      const list = produtos.filter(p => (p.cat||"Outros")===cat && (!q || (p.nome+" "+(p.tec||"")).toLowerCase().includes(q)));
+      if (!list.length) return;
+      box.append(el("div","cat", cat));
+      const wrap = el("div","plist");
+      list.forEach(p => {
+        const it = noCart.get(p.id);
+        const card = el("div","prod"+(it?" on":""));
+        const info = el("div"); info.style.minWidth="0";
+        info.append(el("div","nm",p.nome));
+        if (p.tec) info.append(el("span","tec",p.tec));
+        let act;
+        if (it){
+          act = el("div","inq"); act.setAttribute("role","group"); act.setAttribute("aria-label","Quantidade de "+p.nome+" no orçamento");
+          const m = el("button",null,"−"); m.type="button"; m.setAttribute("aria-label","Diminuir "+p.nome);
+          const pl = el("button",null,"+"); pl.type="button"; pl.setAttribute("aria-label","Aumentar "+p.nome);
+          m.onclick = () => setQty(p.id, it.q-1); pl.onclick = () => setQty(p.id, it.q+1);
+          act.append(m, el("span",null,String(it.q)), pl);
+        } else {
+          act = el("button","addbtn"); act.type="button";
+          act.append(el("span","plus","+"), "Adicionar");
+          act.setAttribute("aria-label","Adicionar "+p.nome+" ao orçamento");
+          act.onclick = () => addItem(p.id);
+        }
+        const lad = el("div","ladder");
+        const curK = it ? unitPrice(p, it.q).k : null;
+        TIERS.forEach(t => {
+          const has = Number(p[t.k])>0;
+          const r = el("div","rung"+(curK===t.k?" cur":"")+(has?"":" off"));
+          r.append(el("small",null,t.lab+" un."), el("b",null, has ? BRL(p[t.k]) : "—"));
+          lad.append(r);
+        });
+        card.append(info, act, lad); wrap.append(card);
+      });
+      box.append(wrap);
+    });
+    if (!box.children.length){ const e=el("div","empty"); e.append(el("strong",null,"Nada encontrado")); e.append("Tente outro nome ou limpe o filtro."); box.append(e); }
+  }
+
+  // ---------- Carrinho ----------
+  function addItem(id){
+    const ex = cart.itens.find(i => i.id===id);
+    if (ex) ex.q += 1; else cart.itens.push({id, q:1});
+    persist(); renderAll();
+    const p = produtos.find(x=>x.id===id); toast((p?p.nome:"Produto")+" no orçamento");
+  }
+  function setQty(id, q){
+    if (q < 1){ cart.itens = cart.itens.filter(i => i.id!==id); }
+    else { const it = cart.itens.find(i => i.id===id); if (it) it.q = q; }
+    persist(); renderAll();
+  }
+  $("#cliente").addEventListener("input", e => { cart.cliente = e.target.value; persist(); renderPreview(); });
+  $("#desconto").addEventListener("change", e => { cart.desconto = e.target.checked; persist(); renderCart(); });
+  $("#extra").addEventListener("input", e => { cart.extra = parseFloat(e.target.value)||0; persist(); renderCart(); });
+
+  function lines(){
+    return cart.itens.map(i => {
+      const p = produtos.find(x => x.id===i.id) || i.snap;
+      if (!p) return null;
+      const {price, lab} = unitPrice(p, i.q);
+      return {i, p, price, lab, sub: price*i.q, custo: (Number(p.custo)||0)*i.q};
+    }).filter(Boolean);
+  }
+  function totals(){
+    const L = lines();
+    const subtotal = L.reduce((a,l)=>a+l.sub,0);
+    const desc = cart.desconto ? Math.round(subtotal*0.10*100)/100 : 0;
+    const extra = Number(cart.extra)||0;
+    const total = subtotal - desc + extra;
+    const custo = L.reduce((a,l)=>a+l.custo,0);
+    const temCusto = L.length && L.every(l => Number(l.p.custo)>0);
+    const pecas = L.reduce((a,l)=>a+l.i.q,0);
+    return {L, subtotal, desc, extra, total, custo, temCusto, pecas};
+  }
+
+  let limparArmado = false;
+  function renderCart(){
+    if (document.activeElement !== $("#cliente")) $("#cliente").value = cart.cliente||"";
+    $("#desconto").checked = !!cart.desconto;
+    if (document.activeElement !== $("#extra")) $("#extra").value = cart.extra ? cart.extra : "";
+    const box = $("#itens"); box.textContent="";
+    const T = totals();
+    $("#pecas").textContent = plural(T.pecas, "peça", "peças");
+    const bn = $("#b-novo"); bn.hidden = !T.L.length; bn.textContent = T.L.length;
+    if (!T.L.length){
+      const e=el("div","empty"); e.append(el("strong",null,"Orçamento vazio")); e.append("Toque em + Adicionar nos produtos para montar o pedido."); box.append(e);
+    }
+    T.L.forEach(l => {
+      const row = el("div","item");
+      const left = el("div"); left.style.minWidth="0";
+      left.append(el("div","nm",l.p.nome), el("div","meta num", BRL(l.price)+" cada · faixa "+l.lab));
+      const sub = el("div","sub", BRL(l.sub));
+      const r2 = el("div","row2");
+      const st = el("div","stepper");
+      const minus=el("button",null,"−"); minus.type="button"; minus.setAttribute("aria-label","Diminuir quantidade de "+l.p.nome);
+      const inp=el("input"); inp.type="number"; inp.min="1"; inp.value=l.i.q; inp.setAttribute("aria-label","Quantidade de "+l.p.nome); inp.inputMode="numeric";
+      const plus=el("button",null,"+"); plus.type="button"; plus.setAttribute("aria-label","Aumentar quantidade de "+l.p.nome);
+      minus.onclick=()=>setQty(l.i.id, Math.max(1,l.i.q-1));
+      plus.onclick=()=>setQty(l.i.id, l.i.q+1);
+      inp.onchange=()=>setQty(l.i.id, Math.max(1,parseInt(inp.value)||1));
+      inp.onfocus=()=>inp.select();
+      st.append(minus, inp, plus);
+      const rm=el("button","link","Remover"); rm.type="button"; rm.setAttribute("aria-label","Remover "+l.p.nome);
+      rm.onclick=()=>{ cart.itens=cart.itens.filter(x=>x!==l.i); persist(); renderAll(); };
+      r2.append(st, rm);
+      row.append(left, sub, r2);
+      const nx = nextTier(l.p, l.i.q);
+      if (nx){
+        const up = el("button","upsell"); up.type="button";
+        up.append("Com mais "+plural(nx.falta,"peça","peças")+" cai para ", el("b",null,BRL(nx.price)+" cada"), " (faixa "+nx.lab+")");
+        up.title = "Ajustar para "+nx.min+" un."; up.setAttribute("aria-label", up.textContent+". Ajustar para "+nx.min+" unidades");
+        up.onclick = () => setQty(l.i.id, nx.min);
+        row.append(up);
+      }
+      box.append(row);
+    });
+    const s = $("#somas"); s.textContent="";
+    s.hidden = !T.L.length;
+    const addRow=(a,b,cls)=>{ const r=el("div","row"+(cls?" "+cls:"")); r.append(el("span",null,a), el("span",null,b)); s.append(r); };
+    addRow("Subtotal", BRL(T.subtotal));
+    if (T.desc) addRow("Desconto 10% (1º pedido)", "− "+BRL(T.desc), "neg");
+    if (T.extra) addRow("Frete / taxa", "+ "+BRL(T.extra));
+    const tot = el("div","total"); tot.append(el("span",null,"Total"), el("span",null,BRL(T.total))); s.append(tot);
+    if (T.L.length && T.temCusto){
+      const lucro = T.total - T.extra - T.custo;
+      const lu = el("div","lucro");
+      const a = el("span","lock"); a.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2" fill="currentColor"/><path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2.5"/></svg>';
+      a.append("Seu lucro (não vai na mensagem)");
+      lu.append(a, el("b","num", BRL(lucro)+" · "+(T.custo? Math.round(lucro/T.custo*100):0)+"%"));
+      s.append(lu);
+    }
+    ["#copiar","#salvar","#limpar"].forEach(id => $(id).disabled = !T.L.length && !(id==="#limpar" && cart.cliente));
+    desarmarLimpar();
+    renderPreview(); updateDock(T);
+  }
+  function renderAll(){ renderCart(); renderCatalogo(); }
+
+  // ---------- Barra fixa (celular) ----------
+  let ticketVisivel = false;
+  function updateDock(T){
+    T = T || totals();
+    const d = $("#dock");
+    const on = view==="novo" && T.L.length>0 && !ticketVisivel;
+    d.classList.toggle("show", on);
+    document.body.classList.toggle("has-dock", view==="novo" && T.L.length>0);
+    $("#dock-n").textContent = plural(T.pecas,"peça","peças")+" · "+plural(T.L.length,"item","itens");
+    $("#dock-t").textContent = BRL(T.total);
+  }
+  $("#dock-ver").onclick = () => $("#ticket").scrollIntoView({behavior:"smooth",block:"start"});
+  if ("IntersectionObserver" in window){
+    new IntersectionObserver(es => { ticketVisivel = es[0].isIntersecting; updateDock(); }, {threshold:0.15}).observe($("#ticket"));
+  }
+
+  function texto(){
+    const T = totals();
+    const out = ["*Orçamento · Faísca Personalizados*"];
+    if (cart.cliente) out.push("Cliente: "+cart.cliente);
+    out.push("Data: "+hoje.toLocaleDateString("pt-BR"), "");
+    T.L.forEach(l => out.push("• "+l.i.q+"× "+l.p.nome+" — "+BRL(l.price)+" cada = "+BRL(l.sub)));
+    out.push("", "Subtotal: "+BRL(T.subtotal));
+    if (T.desc) out.push("Desconto 10% (1º pedido): − "+BRL(T.desc));
+    if (T.extra) out.push("Frete / taxa: "+BRL(T.extra));
+    out.push("*Total: "+BRL(T.total)+"*", "",
+      "Arte com prova digital antes de produzir.",
+      "Prazo: 7 dias úteis após aprovar a arte.",
+      "Pagamento: Pix ou cartão, 50% na aprovação.",
+      "Orçamento válido por 7 dias.", "",
+      "Faísca Personalizados · (31) 99585-2206");
+    return out.join("\n");
+  }
+  function renderPreview(){ $("#preview").textContent = texto(); }
+
+  $("#copiar").addEventListener("click", async () => {
+    const t = texto();
+    try { await navigator.clipboard.writeText(t); toast("Copiado! Agora é só colar no WhatsApp."); }
+    catch(e){
+      const d=$("details.prev"); d.open=true;
+      const r=document.createRange(); r.selectNodeContents($("#preview")); const sel=getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      toast("Texto selecionado. Use Ctrl+C para copiar.");
+    }
+  });
+  function desarmarLimpar(){ limparArmado=false; const b=$("#limpar"); b.textContent="Limpar"; b.classList.remove("danger"); b.classList.add("ghost"); }
+  $("#limpar").addEventListener("click", () => {
+    const b = $("#limpar");
+    if (!limparArmado){ limparArmado=true; b.textContent="Confirmar limpar"; b.classList.add("danger"); b.classList.remove("ghost"); clearTimeout(b.h); b.h=setTimeout(desarmarLimpar,4000); return; }
+    cart={cliente:"",itens:[],desconto:false,extra:0}; $("#cliente").value=""; $("#extra").value=""; persist(); renderAll(); toast("Orçamento limpo");
+  });
+  $("#salvar").addEventListener("click", async () => {
+    if (!db){ toast("Salvar indisponível nesta visualização"); return; }
+    const T = totals();
+    const doc = { cliente: cart.cliente||"Sem nome", criadoEm: new Date().toISOString(), desconto: !!cart.desconto, extra: Number(cart.extra)||0,
+      total: T.total, subtotal: T.subtotal,
+      itens: T.L.map(l => ({id:l.i.id, q:l.i.q, nome:l.p.nome, preco:l.price, sub:l.sub, snap:{nome:l.p.nome,p1:l.p.p1,p10:l.p.p10||0,p30:l.p.p30||0,p50:l.p.p50||0,custo:l.p.custo||0}})) };
+    try { await db.collection("orcamentos").add(doc); toast("Orçamento salvo"); }
+    catch(e){ toast(e && e.code==="quota_exceeded" ? "Limite de orçamentos salvos atingido. Apague alguns antigos." : "Não foi possível salvar. Tente de novo."); }
+  });
+
+  // ---------- Produtos (CRUD) ----------
+  const F = id => $("#p-"+id);
+  $("#pform").addEventListener("submit", async ev => {
+    ev.preventDefault();
+    if (!db){ toast("Banco de dados indisponível nesta visualização"); return; }
+    const num = id => { const v = parseFloat(F(id).value); return isFinite(v) ? v : 0; };
+    const data = { nome: F("nome").value.trim(), cat: F("cat").value, tec: F("tec").value.trim(),
+      p1: num("p1"), p10: num("p10"), p30: num("p30"), p50: num("p50"), custo: num("custo") };
+    if (!data.nome || !data.p1){ toast("Preencha o nome e o preço de 1–9 unidades"); return; }
+    if (!editId) data.ordem = produtos.length ? Math.max(...produtos.map(p=>p.ordem||0))+1 : 1;
+    try {
+      if (editId){ await db.doc("produtos/"+editId).update(data); toast("Produto atualizado"); }
+      else { await db.collection("produtos").add(data); toast("Produto adicionado"); }
+      resetForm();
+    } catch(e){ toast("Não foi possível salvar o produto. Tente de novo."); }
+  });
+  $("#p-cancelar").addEventListener("click", resetForm);
+  function resetForm(){
+    editId=null; $("#pform").reset(); $("#pform-titulo").textContent="Novo produto"; $("#pform-sub").textContent="Cadastre uma vez e ele aparece no orçamento.";
+    $("#p-salvar").textContent="Adicionar produto"; $("#p-cancelar").hidden=true; renderTabela();
+  }
+  function editar(p){
+    editId=p.id; F("nome").value=p.nome; F("cat").value=p.cat||"Outros"; F("tec").value=p.tec||"";
+    ["p1","p10","p30","p50","custo"].forEach(k => F(k).value = Number(p[k])>0 ? p[k] : "");
+    $("#pform-titulo").textContent="Editar produto"; $("#pform-sub").textContent=p.nome;
+    $("#p-salvar").textContent="Salvar alterações"; $("#p-cancelar").hidden=false; renderTabela();
+    $("#pform").scrollIntoView({behavior:"smooth",block:"start"}); F("nome").focus({preventScroll:true});
+  }
+  const confirmDel = new Set();
+  function renderTabela(){
+    const tb = $("#ptable"); tb.textContent="";
+    const bp = $("#b-prod"); bp.hidden = !produtos.length; bp.textContent = produtos.length;
+    if (!produtos.length){ const tr=el("tr"); const td=el("td","hint", db?"Nenhum produto cadastrado. Use o formulário ao lado.":"Carregando…"); td.colSpan=8; tr.append(td); tb.append(tr); return; }
+    CATS.forEach(cat => {
+      const list = produtos.filter(p => (p.cat||"Outros")===cat);
+      if (!list.length) return;
+      const g = el("tr","grp"); const gt = el("td",null,cat); gt.colSpan=8; g.append(gt); tb.append(g);
+      list.forEach(p => {
+        const tr=el("tr", editId===p.id ? "editing" : "");
+        const c0=el("td"); c0.append(el("div","pn",p.nome)); if (p.tec) c0.append(el("div","pt",p.tec)); tr.append(c0);
+        ["p1","p10","p30","p50","custo"].forEach(k => tr.append(el("td","n", Number(p[k])>0?BRL(p[k]):"—")));
+        const mtd = el("td","n");
+        if (Number(p.custo)>0 && Number(p.p1)>0){ const m = Math.round((p.p1-p.custo)/p.custo*100); mtd.append(el("span","mg"+(m<40?" low":""), m+"%")); } else mtd.textContent="—";
+        tr.append(mtd);
+        const td=el("td","acts");
+        const ed=el("button","link","Editar"); ed.type="button"; ed.onclick=()=>editar(p); ed.setAttribute("aria-label","Editar "+p.nome);
+        const armed = confirmDel.has(p.id);
+        const del=el("button","link"+(armed?" warn":""), armed ? "Confirmar?" : "Excluir"); del.type="button"; del.setAttribute("aria-label","Excluir "+p.nome);
+        del.onclick=async()=>{
+          if (!confirmDel.has(p.id)){ confirmDel.add(p.id); renderTabela(); setTimeout(()=>{confirmDel.delete(p.id); renderTabela();},4000); return; }
+          try { await db.doc("produtos/"+p.id).delete(); toast("Produto excluído"); } catch(e){ toast("Não foi possível excluir"); }
+        };
+        td.append(ed, " ", del); tr.append(td); tb.append(tr);
+      });
+    });
+  }
+
+  // ---------- Salvos ----------
+  function renderSalvos(){
+    const box=$("#salvos"); box.textContent="";
+    const bs = $("#b-salvos"); bs.hidden = !salvos.length; bs.textContent = salvos.length;
+    if (!salvos.length){ const e=el("div","empty"); if (db){ e.append(el("strong",null,"Nenhum orçamento salvo")); e.append("Monte um orçamento e toque em Salvar."); } else e.textContent="Carregando…"; box.append(e); return; }
+    salvos.forEach(o => {
+      const c=el("div","scard");
+      const top=el("div","top"); top.append(el("div","cli",o.cliente), el("div","dt",new Date(o.criadoEm).toLocaleDateString("pt-BR")));
+      const its=(o.itens||[]);
+      const desc=el("div","its", plural(its.reduce((a,i)=>a+i.q,0),"peça","peças")+" · "+its.map(i=>i.q+"× "+i.nome).join(", "));
+      const bot=el("div","bot");
+      const act=el("div");
+      const ab=el("button","btn","Abrir"); ab.type="button";
+      ab.onclick=()=>{ cart={cliente:o.cliente==="Sem nome"?"":o.cliente, desconto:!!o.desconto, extra:o.extra||0, itens:its.map(i=>({id:i.id,q:i.q,snap:i.snap}))}; $("#cliente").value=cart.cliente; $("#extra").value=cart.extra||""; persist(); renderAll(); show("novo"); toast("Orçamento aberto"); };
+      const del=el("button","link","Excluir"); del.type="button";
+      del.onclick=async()=>{ if(del.dataset.c){ try{ await db.doc("orcamentos/"+o.id).delete(); toast("Orçamento excluído"); }catch(e){ toast("Não foi possível excluir"); } } else { del.dataset.c="1"; del.textContent="Confirmar?"; del.classList.add("warn"); setTimeout(()=>{ delete del.dataset.c; del.textContent="Excluir"; del.classList.remove("warn"); },4000); } };
+      act.append(del, ab);
+      bot.append(el("div","t",BRL(o.total)), act);
+      c.append(top, desc, bot); box.append(c);
+    });
+  }
+
+
+  // ---------- Conta / login ----------
+  const gate = $("#gate");
+  function abrirLogin(){
+    gate.hidden = false; $("#gate-setup").hidden = !FaiscaAuth.needsSetup;
+    if (FaiscaAuth.needsSetup){ $("#g-url").required = true; $("#g-key").required = true; }
+    setTimeout(()=>$(FaiscaAuth.needsSetup ? "#g-url" : "#g-email").focus(), 50);
+  }
+  FaiscaAuth.onLogout = () => abrirLogin();
+  FaiscaAuth.online = ok => { const e=$("#conta-sync"); e.textContent = ok ? "sincronizado" : "sem conexão"; e.classList.toggle("off", !ok);
+    if (!ok && produtos.length) $("#status").textContent = "Sem internet: mostrando a última cópia"; else if (ok && produtos.length) $("#status").textContent = "Preço muda sozinho pela quantidade"; };
+  $("#gate-form").addEventListener("submit", async ev => {
+    ev.preventDefault();
+    const b = $("#g-entrar"), err = $("#gate-err"); b.disabled = true; b.textContent = "Entrando…"; err.hidden = true;
+    try {
+      await FaiscaAuth.login($("#g-email").value.trim(), $("#g-senha").value, FaiscaAuth.needsSetup ? $("#g-url").value : "", FaiscaAuth.needsSetup ? $("#g-key").value : "");
+      gate.hidden = true; $("#g-senha").value = ""; $("#conta-email").textContent = FaiscaAuth.email() || ""; toast("Bem-vindo!");
+    } catch(e){
+      err.hidden = false;
+      err.textContent = e.status===400 ? "E-mail ou senha incorretos." : (e instanceof TypeError ? "Não consegui conectar. Confira a internet e o Project URL." : "Não foi possível entrar ("+(e.message||"erro")+").");
+    } finally { b.disabled = false; b.textContent = "Entrar"; }
+  });
+  $("#sair").addEventListener("click", () => FaiscaAuth.logout());
+  $("#conta-email").textContent = FaiscaAuth.email() || "";
+  if (!FaiscaAuth.email()) abrirLogin();
+  $("#bk-exp").addEventListener("click", async () => {
+    try {
+      const blob = new Blob([await FaiscaAuth.exportar()], {type:"application/json"});
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+      a.download = "faisca-backup-"+new Date().toISOString().slice(0,10)+".json"; document.body.append(a); a.click();
+      setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    } catch(e){ toast("Não foi possível gerar o backup"); }
+  });
+
+  renderChips(); renderCatalogo(); renderCart(); renderTabela(); renderSalvos();
+
+  // ---------- Banco de dados ----------
+  const st = $("#status");
+  (window.claude && window.claude.use ? window.claude.use("db") : Promise.resolve(null)).then(d => {
+    db = d;
+    if (!db){ st.textContent="Não foi possível abrir os dados."; renderCatalogo(); renderTabela(); renderSalvos(); return; }
+    db.collection("produtos").orderBy("ordem").onSnapshot(snap => {
+      produtos = snap.docs.map(d => Object.assign({id:d.id}, d.data()));
+      st.textContent = "Preço muda sozinho pela quantidade";
+      renderChips(); renderAll(); renderTabela();
+    }, () => { st.textContent="Não foi possível carregar os produtos. Recarregue a página."; });
+    db.collection("orcamentos").orderBy("criadoEm","desc").limit(100).onSnapshot(snap => {
+      salvos = snap.docs.map(d => Object.assign({id:d.id}, d.data())); renderSalvos();
+    }, () => {});
+  });
+})();
+</script>
+<script>if("serviceWorker" in navigator) addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));</script>
+</body>
+</html>
